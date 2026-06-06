@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning-everything</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7fafc; --surface: #ffffff; --surface2: #eef4f7;
+  --border: #d9e3ea; --border2: #b8c9d4;
+  --text: #1c2833; --text2: #536675; --text3: #8294a3;
+  --accent: #167c90; --accent2: #126d7e; --accent-dim: #e2f4f7;
+  --danger: #c2413a; --danger-dim: #fff0ee;
+  --success: #26845b; --success-dim: #e8f7ef;
+  --warning: #b7791f; --warning-dim: #fff7df;
+  --shadow: 0 8px 24px rgba(37, 55, 70, 0.08);
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+html { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; }
+body { min-height: 100vh; display: flex; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+
+#sidebar {
+  width: 280px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  height: 100vh; position: sticky; top: 0; overflow: hidden;
+}
+#sidebar-header { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); background: #fbfdfe; }
+#sidebar-header h1 { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: 0; }
+#sidebar-header p { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.slabel { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 14px 18px 7px; font-weight: 700; }
+#import-panel { display: flex; flex-direction: column; gap: 7px; padding: 0 12px 12px; }
+#folder-input { display: none; }
+.primary-btn {
+  width: 100%; background: var(--accent); border: 1px solid var(--accent);
+  color: #fff; font-weight: 700; font-size: 13px;
+  padding: 9px 10px; border-radius: 6px;
+  box-shadow: 0 5px 14px rgba(22, 124, 144, 0.18);
+}
+.primary-btn:hover { background: var(--accent2); border-color: var(--accent2); }
+.primary-btn:disabled, .secondary-btn:disabled, #btn-delete:disabled, .rate-btn:disabled {
+  opacity: 0.45; cursor: not-allowed; box-shadow: none;
+}
+.primary-btn:disabled:hover { background: var(--accent); border-color: var(--accent); }
+.secondary-btn:disabled:hover, #btn-delete:disabled:hover {
+  background: var(--surface); color: var(--text2); border-color: var(--border);
+}
+.secondary-btn, #btn-delete {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text2); font-size: 12px; padding: 7px 9px;
+  border-radius: 5px; text-align: center;
+}
+.secondary-btn:hover, #btn-delete:hover { background: var(--surface2); color: var(--accent); border-color: var(--accent); }
+#file-input, .field, .prompt-editor textarea, .prompt-editor input, .prompt-editor select {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px; outline: none;
+}
+#file-input { padding: 7px 9px; font-size: 12px; width: 100%; }
+#file-input:focus, .field:focus, .prompt-editor textarea:focus, .prompt-editor input:focus, .prompt-editor select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+#file-status { color: var(--text3); font-size: 11px; line-height: 1.5; }
+
+#category-list, #card-list { overflow-y: auto; }
+#category-list { flex-shrink: 0; max-height: 190px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+#card-list { flex: 1; }
+#category-list::-webkit-scrollbar, #card-list::-webkit-scrollbar { width: 3px; }
+#category-list::-webkit-scrollbar-thumb, #card-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.category-entry, .card-entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px 8px 16px; border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+.category-entry:hover, .card-entry:hover { background: var(--surface2); }
+.category-entry.active, .card-entry.active { background: var(--surface2); border-left-color: var(--accent); }
+.category-name, .card-entry .ename { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.category-name { color: var(--text2); font-weight: 600; font-size: 12px; }
+.category-entry.active .category-name, .card-entry.active .ename { color: var(--text); }
+.count { font-size: 11px; color: var(--text3); background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 1px 7px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-overdue { background: var(--danger); }
+.dot-due { background: var(--warning); }
+.dot-ok { background: var(--text3); }
+.dot-new { background: #fff; border: 1px solid var(--text3); }
+.card-entry .ename { font-size: 12px; color: var(--text2); }
+.card-entry .dlabel { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+.dlabel.overdue { color: var(--danger); }
+.dlabel.due { color: var(--warning); }
+#sidebar-footer { border-top: 1px solid var(--border); padding: 11px 18px; font-size: 12px; color: var(--text3); background: #fbfdfe; }
+
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; overflow-y: auto; }
+#view-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92); position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(10px);
+}
+.vtab {
+  padding: 12px 20px; font-size: 13px; color: var(--text3);
+  border: none; background: none; border-bottom: 2px solid transparent;
+  transition: color 0.1s; margin-bottom: -1px; font-weight: 700;
+}
+.vtab:hover { color: var(--text2); }
+.vtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+#view-dashboard, #view-card-lists, #view-prompts { padding: 28px 32px; }
+.dash-section { margin-bottom: 32px; }
+.dash-section-title {
+  font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 12px; font-weight: 800;
+  display: flex; align-items: center; gap: 8px;
+}
+.count-badge {
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 11px; padding: 1px 7px; border-radius: 99px; color: var(--text3);
+}
+.count-badge.red { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+.count-badge.amber { background: var(--warning-dim); border-color: var(--warning); color: var(--warning); }
+.dash-grid { display: flex; flex-direction: column; gap: 6px; }
+.dash-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 7px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 14px;
+  transition: border-color 0.1s, box-shadow 0.1s, transform 0.1s;
+}
+.dash-card:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-1px); }
+.dash-card.done { opacity: 0.58; }
+.dash-card .dc-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dash-card .dc-name { flex: 1; font-size: 14px; color: var(--text); font-weight: 700; }
+.dash-card .dc-meta { font-size: 12px; color: var(--text3); text-align: right; line-height: 1.8; }
+.dc-done-badge {
+  font-size: 11px; color: var(--success); background: var(--success-dim);
+  border: 1px solid var(--success); border-radius: 99px; padding: 1px 8px;
+}
+.empty-dash { font-size: 13px; color: var(--text3); padding: 16px 0; font-style: italic; }
+.stats-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 28px; }
+.stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 13px 16px; box-shadow: var(--shadow); }
+.stat-box .sn { font-size: 24px; font-weight: 800; color: var(--text); }
+.stat-box .sl { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+.card-list-table {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: var(--shadow); overflow: hidden;
+}
+.card-list-header, .card-list-row {
+  display: grid; grid-template-columns: minmax(180px, 1.6fr) minmax(120px, 0.9fr) minmax(120px, 0.8fr) minmax(190px, 1.2fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr);
+  gap: 12px; align-items: center;
+}
+.card-list-header {
+  padding: 10px 14px; background: #fbfdfe; border-bottom: 1px solid var(--border);
+  color: var(--text3); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.card-list-row {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  transition: background 0.1s, transform 0.1s;
+}
+.card-list-row:last-child { border-bottom: none; }
+.card-list-row:hover { background: var(--surface2); transform: translateY(-1px); }
+.cl-title { color: var(--text); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-muted { color: var(--text3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-progress { color: var(--text2); font-size: 12px; }
+.status-chip {
+  display: inline-flex; align-items: center; width: fit-content;
+  border: 1px solid var(--border); border-radius: 99px; padding: 2px 9px;
+  font-size: 12px; color: var(--text3); background: var(--surface2);
+}
+.status-chip.overdue { color: var(--danger); background: var(--danger-dim); border-color: var(--danger); }
+.status-chip.due { color: var(--warning); background: var(--warning-dim); border-color: var(--warning); }
+.status-chip.new { color: var(--accent); background: var(--accent-dim); border-color: var(--accent); }
+.status-chip.ok { color: var(--success); background: var(--success-dim); border-color: var(--success); }
+
+#view-card { display: flex; flex-direction: column; flex: 1; }
+#topbar {
+  border-bottom: 1px solid var(--border); padding: 13px 28px;
+  display: flex; align-items: center; gap: 14px; background: var(--bg);
+}
+#topbar h2 { font-size: 20px; font-weight: 800; color: var(--text); flex: 1; }
+#topbar .meta { font-size: 12px; color: var(--text3); text-align: right; line-height: 1.9; }
+.card-actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+#status-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 28px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.status-pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; }
+.pill-overdue { background: var(--danger-dim); color: var(--danger); border: 1px solid var(--danger); }
+.pill-due { background: var(--warning-dim); color: var(--warning); border: 1px solid var(--warning); }
+.pill-ok { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+.pill-done { background: var(--success-dim); color: var(--success); border: 1px solid var(--success); }
+.status-sep { flex: 1; }
+.idisplay { font-size: 12px; color: var(--text3); }
+#card-file-status { font-size: 12px; color: var(--text3); }
+#card-file-status.writable { color: var(--success); }
+#card-file-status.readonly { color: var(--warning); }
+#card-file-status.dirty { color: var(--warning); font-weight: 700; }
+#card-file-status.saved { color: var(--success); font-weight: 700; }
+#content-area { flex: 1; padding: 28px 32px; max-width: 900px; width: 100%; margin: 0 auto; }
+#md-render h1 { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 14px; line-height: 1.3; }
+#md-render h2 { font-size: 20px; font-weight: 800; color: var(--text); margin: 26px 0 9px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+#md-render h3 { font-size: 14px; font-weight: 800; color: var(--text2); margin: 18px 0 7px; letter-spacing: 0.05em; text-transform: uppercase; }
+#md-render p { color: var(--text2); margin: 9px 0; line-height: 1.8; }
+#md-render ul, #md-render ol { color: var(--text2); margin: 7px 0 7px 20px; }
+#md-render li { margin: 3px 0; line-height: 1.7; }
+#md-render strong { color: var(--text); font-weight: 800; }
+#md-render em { color: var(--accent); }
+#md-render code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: var(--surface2); color: #0f766e; padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); }
+#md-render pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin: 12px 0; overflow-x: auto; }
+#md-render pre code { background: none; border: none; padding: 0; font-size: 12px; color: #0f766e; line-height: 1.7; }
+#md-render table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+#md-render th { background: var(--surface2); color: var(--text2); padding: 7px 11px; text-align: left; border: 1px solid var(--border); font-weight: 800; }
+#md-render td { padding: 6px 11px; border: 1px solid var(--border); color: var(--text2); }
+#md-render tr:hover td { background: var(--surface); }
+#md-render blockquote { border-left: 3px solid var(--accent); padding-left: 13px; margin: 11px 0; color: var(--text3); }
+#md-render a { color: var(--accent); text-decoration: none; }
+#md-render hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+#md-editor { display: none; width: 100%; min-height: 58vh; resize: vertical; padding: 14px; line-height: 1.65; }
+#md-editor.dirty { border-color: var(--warning); box-shadow: 0 0 0 3px var(--warning-dim); }
+#empty-card { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 60px 28px; text-align: center; }
+#empty-card .big { font-size: 28px; color: var(--border2); font-weight: 800; margin-bottom: 14px; }
+#empty-card p { color: var(--text3); font-size: 14px; line-height: 2; }
+
+#review-bar {
+  position: sticky; bottom: 0; background: var(--surface);
+  border-top: 1px solid var(--border); padding: 14px 28px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+#review-bar .rlabel { font-size: 13px; color: var(--text3); margin-right: 2px; font-weight: 700; }
+.rate-btn {
+  font-size: 12px; border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); padding: 7px 12px; border-radius: 5px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; transition: all 0.1s;
+}
+.rate-btn .sc { font-size: 15px; font-weight: 800; }
+.rate-btn .dc { font-size: 11px; color: var(--text3); }
+.rate-btn.r1:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+.rate-btn.r2:hover { border-color: #c06a2b; color: #c06a2b; background: #fff4ea; }
+.rate-btn.r3:hover { border-color: var(--warning); color: var(--warning); background: var(--warning-dim); }
+.rate-btn.r4:hover { border-color: var(--success); color: var(--success); background: var(--success-dim); }
+.rate-btn.r5:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.rspacer { flex: 1; }
+#next-info { font-size: 12px; color: var(--text3); text-align: right; line-height: 1.8; }
+
+.prompts-layout { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 18px; }
+.prompt-list, .prompt-editor {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+  box-shadow: var(--shadow);
+}
+.prompt-list { min-height: 520px; overflow: hidden; display: flex; flex-direction: column; }
+.prompt-list-header { padding: 14px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+.prompt-list-body { overflow-y: auto; flex: 1; padding: 8px; }
+.prompt-entry { padding: 10px; border-radius: 6px; border: 1px solid transparent; }
+.prompt-entry:hover { background: var(--surface2); }
+.prompt-entry.active { background: var(--accent-dim); border-color: var(--accent); }
+.prompt-title { color: var(--text); font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prompt-meta { color: var(--text3); font-size: 11px; margin-top: 2px; }
+.prompt-editor { padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 520px; }
+.prompt-editor label { display: flex; flex-direction: column; gap: 5px; color: var(--text3); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+.prompt-editor input, .prompt-editor select { padding: 9px 10px; }
+.prompt-editor textarea { min-height: 310px; resize: vertical; padding: 10px; line-height: 1.6; }
+.prompt-actions { display: flex; gap: 8px; align-items: center; }
+.danger-btn { border-color: var(--danger); color: var(--danger); }
+.danger-btn:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(16, 42, 51, 0.38);
+  display: none; align-items: center; justify-content: center; z-index: 300;
+  padding: 24px;
+}
+.modal {
+  width: min(760px, 100%); max-height: 92vh; overflow: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 24px 70px rgba(16, 42, 51, 0.22);
+  padding: 18px; display: flex; flex-direction: column; gap: 12px;
+}
+.modal h3 { font-size: 18px; color: var(--text); }
+.modal label { display: flex; flex-direction: column; gap: 5px; color: var(--text3); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+.modal input, .modal select, .modal textarea {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px; outline: none; padding: 9px 10px;
+}
+.modal textarea { min-height: 260px; resize: vertical; line-height: 1.6; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+
+#toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(16px);
+  background: #102a33; border: 1px solid #102a33;
+  color: #fff; font-size: 13px; padding: 8px 16px;
+  border-radius: 99px; opacity: 0; transition: all 0.18s; pointer-events: none; z-index: 200;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 860px) {
+  body { flex-direction: column; }
+  #sidebar { width: 100%; height: auto; max-height: 48vh; position: relative; }
+  #main { height: auto; min-height: 100vh; }
+  .stats-row, .prompts-layout { grid-template-columns: 1fr; }
+  #topbar, #status-bar, #review-bar { padding-left: 18px; padding-right: 18px; }
+  #view-dashboard, #view-card-lists, #view-prompts, #content-area { padding: 20px 18px; }
+  .card-list-table { overflow-x: auto; }
+  .card-list-header, .card-list-row { min-width: 920px; }
+}
+</style>
+</head>
+<body>
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <h1>Learning-everything</h1>
+    <p>Study cards, review schedule, and prompts</p>
+  </div>
+  <div class="slabel">Import</div>
+  <div id="import-panel">
+    <button class="primary-btn" onclick="pickFolder()">Connect Folder</button>
+    <button class="secondary-btn" onclick="openNewCardModal()">New Card</button>
+    <input type="file" id="folder-input" webkitdirectory directory multiple accept=".md,text/markdown">
+    <div id="file-status">No writable folder connected.</div>
+    <input type="text" id="file-input" placeholder="filename.md">
+    <button class="secondary-btn" onclick="addFile()">Load Single File</button>
+  </div>
+  <div class="slabel">Categories</div>
+  <div id="category-list"></div>
+  <div class="slabel">Cards</div>
+  <div id="card-list"></div>
+  <div id="sidebar-footer"><div id="footer-stats">No cards</div></div>
+</aside>
+
+<main id="main">
+  <div id="view-tabs">
+    <button class="vtab active" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="vtab" onclick="switchView('cardLists')">Card Lists</button>
+    <button class="vtab" onclick="switchView('prompts')">Prompts</button>
+    <button class="vtab" onclick="switchView('card')" id="tab-card">Card</button>
+  </div>
+
+  <div id="view-dashboard">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="dash-section">
+      <div class="dash-section-title">Overdue <span class="count-badge red" id="badge-overdue">0</span></div>
+      <div class="dash-grid" id="grid-overdue"><div class="empty-dash">None</div></div>
+    </div>
+    <div class="dash-section">
+      <div class="dash-section-title">Today <span class="count-badge amber" id="badge-today">0</span></div>
+      <div class="dash-grid" id="grid-today"><div class="empty-dash">None</div></div>
+    </div>
+    <div class="dash-section">
+      <div class="dash-section-title">Tomorrow <span class="count-badge" id="badge-tomorrow">0</span></div>
+      <div class="dash-grid" id="grid-tomorrow"><div class="empty-dash">None</div></div>
+    </div>
+    <div class="dash-section">
+      <div class="dash-section-title">In 2 Days <span class="count-badge" id="badge-d2">0</span></div>
+      <div class="dash-grid" id="grid-d2"><div class="empty-dash">None</div></div>
+    </div>
+    <div class="dash-section">
+      <div class="dash-section-title">Later <span class="count-badge" id="badge-later">0</span></div>
+      <div class="dash-grid" id="grid-later"><div class="empty-dash">None</div></div>
+    </div>
+  </div>
+
+  <div id="view-card-lists" style="display:none;">
+    <div class="dash-section-title">Card Lists <span class="count-badge" id="card-lists-count">0</span></div>
+    <div class="card-list-table">
+      <div class="card-list-header">
+        <div>Title</div>
+        <div>Category</div>
+        <div>Status</div>
+        <div>Progress</div>
+        <div>Last Review</div>
+        <div>Next Review</div>
+      </div>
+      <div id="card-lists-body"></div>
+    </div>
+  </div>
+
+  <div id="view-card" style="display:none; flex-direction:column; flex:1;">
+    <div id="topbar">
+      <h2 id="topbar-title">No card selected</h2>
+      <div class="meta" id="topbar-meta"></div>
+      <div class="card-actions">
+        <button class="secondary-btn" id="btn-preview" onclick="setCardMode('preview')">Preview</button>
+        <button class="secondary-btn" id="btn-edit" onclick="setCardMode('edit')">Edit</button>
+        <button class="secondary-btn" id="btn-save-md" onclick="saveActiveMarkdown()">Save</button>
+        <button class="secondary-btn" id="btn-cancel-edit" onclick="cancelMarkdownEdit()">Cancel</button>
+        <button class="secondary-btn" id="btn-save-new" onclick="saveEditAsNewFile()">Save as New</button>
+        <button id="btn-delete" onclick="deleteCard()">Remove</button>
+      </div>
+    </div>
+    <div id="status-bar">
+      <div id="status-pill"></div>
+      <div class="status-sep"></div>
+      <div id="card-file-status"></div>
+      <div class="idisplay" id="interval-display"></div>
+    </div>
+    <div id="content-area">
+      <div id="md-render"></div>
+      <textarea id="md-editor" spellcheck="false"></textarea>
+      <div id="empty-card">
+        <div class="big">No card selected</div>
+        <p>Select a card from the sidebar or dashboard.</p>
+      </div>
+    </div>
+    <div id="review-bar">
+      <span class="rlabel">Review rating:</span>
+      <button class="rate-btn r1" onclick="rateCard(1)"><span class="sc">1</span><span class="dc">Forgot</span></button>
+      <button class="rate-btn r2" onclick="rateCard(2)"><span class="sc">2</span><span class="dc">Hard</span></button>
+      <button class="rate-btn r3" onclick="rateCard(3)"><span class="sc">3</span><span class="dc">Effortful</span></button>
+      <button class="rate-btn r4" onclick="rateCard(4)"><span class="sc">4</span><span class="dc">Good</span></button>
+      <button class="rate-btn r5" onclick="rateCard(5)"><span class="sc">5</span><span class="dc">Easy</span></button>
+      <div class="rspacer"></div>
+      <div id="next-info"></div>
+    </div>
+  </div>
+
+  <div id="view-prompts" style="display:none;">
+    <div class="prompts-layout">
+      <section class="prompt-list">
+        <div class="prompt-list-header">
+          <button class="primary-btn" onclick="newPrompt()">New Prompt</button>
+        </div>
+        <div class="prompt-list-body" id="prompt-list-body"></div>
+      </section>
+      <section class="prompt-editor">
+        <label>Title <input id="prompt-title" type="text" placeholder="Prompt title"></label>
+        <label>Category <select id="prompt-category"></select></label>
+        <label>Prompt <textarea id="prompt-body" placeholder="Write or paste your prompt here."></textarea></label>
+        <div class="prompt-actions">
+          <button class="primary-btn" style="width:auto;" onclick="savePromptFromEditor()">Save Prompt</button>
+          <button class="secondary-btn danger-btn" id="btn-delete-prompt" onclick="deletePrompt()">Delete</button>
+          <span id="prompt-save-state" style="color:var(--text3);font-size:12px;"></span>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<div class="modal-backdrop" id="new-card-modal">
+  <div class="modal">
+    <h3>New Markdown Card</h3>
+    <label>Filename <input id="new-card-name" type="text" placeholder="new-card.md"></label>
+    <label>Category <select id="new-card-category"></select></label>
+    <label>Markdown <textarea id="new-card-content" placeholder="# New card"></textarea></label>
+    <div class="modal-actions">
+      <span id="new-card-status" style="color:var(--text3);font-size:12px;flex:1;"></span>
+      <button class="secondary-btn" onclick="closeNewCardModal()">Cancel</button>
+      <button class="primary-btn" style="width:auto;" onclick="createMarkdownCard()">Create Card</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE_KEY = 'srs_cards_v2';
+const PROMPT_KEY = 'learning_everything_prompts_v1';
+const DEFAULT_CATEGORY = 'Uncategorized';
+
+function sm2(card, q) {
+  let { ef = 2.5, interval = 0, repetitions = 0 } = card;
+  const quality = Math.max(0, ((q - 1) / 4) * 5);
+  if (quality < 3) {
+    repetitions = 0; interval = 1;
+  } else {
+    if (repetitions === 0) interval = 1;
+    else if (repetitions === 1) interval = 6;
+    else interval = Math.round(interval * ef);
+    repetitions++;
+  }
+  ef = Math.max(1.3, ef + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  const now = new Date();
+  const nextReview = new Date(now.getTime() + interval * 86400000);
+  return {
+    ef: parseFloat(ef.toFixed(3)), interval, repetitions,
+    lastReview: now.toISOString(), nextReview: nextReview.toISOString(),
+  };
+}
+function previewInterval(card, q) { return sm2({ ...card }, q).interval; }
+
+function loadJson(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
+}
+function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+function savePrompts() { localStorage.setItem(PROMPT_KEY, JSON.stringify(prompts)); }
+
+let store = normalizeStore(loadJson(STORE_KEY, {}));
+let prompts = normalizePrompts(loadJson(PROMPT_KEY, []));
+let activeFile = null;
+let currentView = 'dashboard';
+let activeCategory = 'All';
+let activePromptId = prompts[0]?.id || null;
+let directoryHandle = null;
+let fileHandles = new Map();
+let cardMode = 'preview';
+let editorDirty = false;
+let connectedRootName = '';
+let writableRootCategory = null;
+saveStore();
+savePrompts();
+
+function normalizeStore(raw) {
+  const normalized = {};
+  for (const [name, card] of Object.entries(raw || {})) {
+    const category = card.category || inferCategoryFromName(name);
+    const totalReviews = Number.isFinite(card.totalReviews)
+      ? card.totalReviews
+      : card.lastReview ? Math.max(1, card.repetitions || 0) : 0;
+    normalized[name] = {
+      content: card.content || '',
+      ef: Number.isFinite(card.ef) ? card.ef : 2.5,
+      interval: Number.isFinite(card.interval) ? card.interval : 0,
+      repetitions: Number.isFinite(card.repetitions) ? card.repetitions : 0,
+      totalReviews,
+      lastReview: card.lastReview || null,
+      nextReview: card.nextReview || null,
+      category,
+    };
+  }
+  return normalized;
+}
+function normalizePrompts(raw) {
+  return Array.isArray(raw) ? raw.map(p => ({
+    id: p.id || crypto.randomUUID(),
+    title: p.title || 'Untitled Prompt',
+    body: p.body || '',
+    category: p.category || DEFAULT_CATEGORY,
+    createdAt: p.createdAt || new Date().toISOString(),
+    updatedAt: p.updatedAt || p.createdAt || new Date().toISOString(),
+  })) : [];
+}
+
+function today() {
+  const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateStr(isoOrNull) {
+  if (!isoOrNull) return null;
+  const d = new Date(isoOrNull);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function addDays(base, n) {
+  const d = new Date(base + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysDiff(isoDate) {
+  if (!isoDate) return null;
+  const diff = new Date(isoDate) - new Date();
+  return Math.ceil(diff / 86400000);
+}
+function getStatus(card) {
+  if (!card.nextReview) return 'new';
+  const d = daysDiff(card.nextReview);
+  if (d < 0) return 'overdue';
+  if (d === 0) return 'due';
+  return 'ok';
+}
+function fmtDate(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtDatetime(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+function jsArg(value) { return escapeHtml(JSON.stringify(value)); }
+function displayName(fname) {
+  return fname.split('/').pop().replace(/\.md$/i, '').replace(/[-_]/g, ' ');
+}
+function inferCategoryFromName(name) {
+  const parts = name.split('/').filter(Boolean);
+  return parts.length > 1 ? parts[0] : DEFAULT_CATEGORY;
+}
+function categoryOfFile(file, hasNestedCategories = false) {
+  const raw = file.webkitRelativePath || file.name;
+  const parts = raw.split('/').filter(Boolean);
+  if (parts.length > 2) return parts[1];
+  if (parts.length > 1 && !hasNestedCategories) return parts[0];
+  return DEFAULT_CATEGORY;
+}
+function normalizeImportedName(file) {
+  const raw = file.webkitRelativePath || file.name;
+  const parts = raw.split('/').filter(Boolean);
+  return parts.length > 1 ? parts.slice(1).join('/') : file.name;
+}
+function sanitizeFilename(name) {
+  const cleaned = name.trim().replace(/[\\/:*?"<>|]/g, '-');
+  if (!cleaned) return '';
+  return cleaned.toLowerCase().endsWith('.md') ? cleaned : `${cleaned}.md`;
+}
+function cardPathFor(category, filename) {
+  const fname = sanitizeFilename(filename);
+  if (!fname) return '';
+  if (writableRootCategory && category === writableRootCategory) return fname;
+  return !category || category === DEFAULT_CATEGORY ? fname : `${category}/${fname}`;
+}
+async function getOrCreateCategoryDirectory(category) {
+  if (!directoryHandle) throw new Error('No writable folder connected.');
+  if (!category || category === DEFAULT_CATEGORY) return directoryHandle;
+  return directoryHandle.getDirectoryHandle(category, { create: true });
+}
+async function getWritableFileHandle(path, create = false) {
+  if (!directoryHandle) throw new Error('No writable folder connected.');
+  const parts = path.split('/').filter(Boolean);
+  const filename = parts.pop();
+  let dir = directoryHandle;
+  for (const part of parts) dir = await dir.getDirectoryHandle(part, { create });
+  return dir.getFileHandle(filename, { create });
+}
+async function writeFileHandle(fileHandle, content) {
+  const writable = await fileHandle.createWritable();
+  await writable.write(content);
+  await writable.close();
+}
+async function collectMarkdownHandles(dirHandle, prefix = '') {
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'directory') {
+      entries.push(...await collectMarkdownHandles(handle, `${prefix}${name}/`));
+    } else if (handle.kind === 'file' && name.toLowerCase().endsWith('.md')) {
+      entries.push({ path: `${prefix}${name}`, handle });
+    }
+  }
+  return entries;
+}
+function categoryFromHandlePath(path, hasNestedCategories) {
+  const parts = path.split('/').filter(Boolean);
+  if (parts.length > 1) return parts[0];
+  return hasNestedCategories ? DEFAULT_CATEGORY : connectedRootName || DEFAULT_CATEGORY;
+}
+function normalizedNameFromHandlePath(path, hasNestedCategories) {
+  const parts = path.split('/').filter(Boolean);
+  if (parts.length > 1 || hasNestedCategories) return path;
+  return parts[0] || path;
+}
+function findExistingCardKey(candidateName, category) {
+  if (store[candidateName]) return candidateName;
+  const filename = candidateName.split('/').pop();
+  const matches = Object.keys(store).filter(key => {
+    const card = store[key];
+    return key.split('/').pop() === filename && (card.category || DEFAULT_CATEGORY) === (category || DEFAULT_CATEGORY);
+  });
+  if (matches.length === 1) return matches[0];
+  const rootMatch = Object.keys(store).find(key => key === filename);
+  return rootMatch || null;
+}
+function possibleFileKeysForCard(key) {
+  const card = store[key];
+  if (!card) return [];
+  const filename = key.split('/').pop();
+  const category = card.category || DEFAULT_CATEGORY;
+  const candidates = [
+    key,
+    filename,
+    category && category !== DEFAULT_CATEGORY ? `${category}/${filename}` : null,
+    cardPathFor(category, filename),
+  ].filter(Boolean);
+  return Array.from(new Set(candidates));
+}
+async function resolveFileHandleForCard(key) {
+  for (const candidate of possibleFileKeysForCard(key)) {
+    if (fileHandles.has(candidate)) {
+      const handle = fileHandles.get(candidate);
+      fileHandles.set(key, handle);
+      return handle;
+    }
+  }
+  if (!directoryHandle) return null;
+  for (const candidate of possibleFileKeysForCard(key)) {
+    try {
+      const handle = await getWritableFileHandle(candidate, false);
+      fileHandles.set(key, handle);
+      return handle;
+    } catch {}
+  }
+  return null;
+}
+function allCategories() {
+  const set = new Set([DEFAULT_CATEGORY]);
+  if (writableRootCategory) set.add(writableRootCategory);
+  Object.values(store).forEach(card => set.add(card.category || DEFAULT_CATEGORY));
+  prompts.forEach(prompt => set.add(prompt.category || DEFAULT_CATEGORY));
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+function visibleKeys() {
+  return Object.keys(store).filter(k => activeCategory === 'All' || store[k].category === activeCategory);
+}
+
+function renderCategories() {
+  const el = document.getElementById('category-list');
+  const all = Object.keys(store).length;
+  const categories = allCategories().map(category => ({
+    category,
+    count: Object.values(store).filter(card => card.category === category).length,
+  })).filter(item => item.count > 0 || item.category === DEFAULT_CATEGORY);
+  const entries = [{ category: 'All', count: all }, ...categories];
+  el.innerHTML = entries.map(({ category, count }) => `
+    <div class="category-entry${category === activeCategory ? ' active' : ''}" onclick="setCategory(${jsArg(category)})">
+      <span class="category-name">${escapeHtml(category)}</span>
+      <span class="count">${count}</span>
+    </div>
+  `).join('');
+}
+function setCategory(category) {
+  activeCategory = category;
+  renderAll();
+  if (currentView === 'prompts') renderPrompts();
+}
+
+function renderSidebar() {
+  renderFileStatus();
+  renderCategories();
+  const list = document.getElementById('card-list');
+  const keys = visibleKeys();
+  const order = { overdue: 0, due: 1, new: 2, ok: 3 };
+  keys.sort((a, b) => order[getStatus(store[a])] - order[getStatus(store[b])] || displayName(a).localeCompare(displayName(b)));
+
+  if (!keys.length) {
+    list.innerHTML = '<div style="padding:8px 16px;font-size:12px;color:var(--text3);">No cards in this category</div>';
+  } else {
+    const dotMap = { overdue: 'dot-overdue', due: 'dot-due', new: 'dot-new', ok: 'dot-ok' };
+    list.innerHTML = keys.map(fname => {
+      const card = store[fname];
+      const st = getStatus(card);
+      const d = daysDiff(card.nextReview);
+      const days = !card.nextReview ? '' : st === 'overdue' ? `-${Math.abs(d)}d` : st === 'due' ? 'today' : `+${d}d`;
+      const dayCls = st === 'overdue' ? 'overdue' : st === 'due' ? 'due' : '';
+      return `<div class="card-entry${fname === activeFile ? ' active' : ''}" onclick="openCard(${jsArg(fname)})">
+        <span class="dot ${dotMap[st]}"></span>
+        <span class="ename" title="${escapeHtml(fname)}">${escapeHtml(displayName(fname))}</span>
+        <span class="dlabel ${dayCls}">${escapeHtml(days)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const total = keys.length;
+  const overdue = keys.filter(k => getStatus(store[k]) === 'overdue').length;
+  const due = keys.filter(k => getStatus(store[k]) === 'due').length;
+  document.getElementById('footer-stats').innerHTML =
+    `${total} cards · <span style="color:var(--danger)">${overdue} overdue</span> · <span style="color:var(--accent)">${due} due</span>`;
+}
+
+function renderFileStatus() {
+  const el = document.getElementById('file-status');
+  if (!el) return;
+  if (directoryHandle) {
+    el.innerHTML = `Writable folder connected: <strong>${escapeHtml(connectedRootName || directoryHandle.name)}</strong>`;
+  } else {
+    el.textContent = 'No writable folder connected. Read-only imports cannot be saved back to disk.';
+  }
+}
+
+function renderDashboard() {
+  const keys = visibleKeys();
+  const t = today(), t1 = addDays(t, 1), t2 = addDays(t, 2);
+  const groups = { overdue: [], today: [], tomorrow: [], d2: [], later: [] };
+  for (const fname of keys) {
+    const card = store[fname];
+    const ds = dateStr(card.nextReview);
+    if (!card.nextReview) { groups.today.push(fname); continue; }
+    if (ds < t) groups.overdue.push(fname);
+    else if (ds === t) groups.today.push(fname);
+    else if (ds === t1) groups.tomorrow.push(fname);
+    else if (ds === t2) groups.d2.push(fname);
+    else groups.later.push(fname);
+  }
+
+  const mastered = keys.filter(k => (store[k].repetitions || 0) >= 5).length;
+  const reviewed = keys.filter(k => store[k].lastReview && dateStr(store[k].lastReview) === t).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="sn">${keys.length}</div><div class="sl">Cards</div></div>
+    <div class="stat-box"><div class="sn" style="color:var(--accent)">${groups.overdue.length + groups.today.length}</div><div class="sl">Due Today</div></div>
+    <div class="stat-box"><div class="sn" style="color:var(--success)">${reviewed}</div><div class="sl">Reviewed Today</div></div>
+    <div class="stat-box"><div class="sn">${mastered}</div><div class="sl">Streak 5+</div></div>`;
+
+  document.getElementById('badge-overdue').textContent = groups.overdue.length;
+  document.getElementById('badge-today').textContent = groups.today.length;
+  document.getElementById('badge-tomorrow').textContent = groups.tomorrow.length;
+  document.getElementById('badge-d2').textContent = groups.d2.length;
+  document.getElementById('badge-later').textContent = groups.later.length;
+
+  function renderGroup(id, fnames) {
+    const el = document.getElementById(id);
+    if (!fnames.length) { el.innerHTML = '<div class="empty-dash">None</div>'; return; }
+    el.innerHTML = fnames.map(fname => {
+      const card = store[fname];
+      const isDone = card.lastReview && dateStr(card.lastReview) === t;
+      const dotCls = getStatus(card) === 'overdue' ? 'dot-overdue' : getStatus(card) === 'due' ? 'dot-due' : 'dot-ok';
+      const doneBadge = isDone ? `<span class="dc-done-badge">Reviewed today</span>` : '';
+      const metaLine = card.lastReview
+        ? `Last ${fmtDatetime(card.lastReview)} · Reviews ${card.totalReviews || 0} · Streak ${card.repetitions || 0} · Interval ${card.interval || 0}d`
+        : 'Not reviewed yet';
+      return `<div class="dash-card${isDone?' done':''}" onclick="openCard(${jsArg(fname)})">
+        <span class="dot dc-dot ${dotCls}"></span>
+        <div style="flex:1">
+          <div class="dc-name">${escapeHtml(displayName(fname))}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">${escapeHtml(card.category || DEFAULT_CATEGORY)} · ${escapeHtml(metaLine)}</div>
+        </div>
+        <div class="dc-meta">
+          ${doneBadge}
+          ${card.nextReview ? `<div>Next ${escapeHtml(fmtDate(card.nextReview))}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderGroup('grid-overdue', groups.overdue);
+  renderGroup('grid-today', groups.today);
+  renderGroup('grid-tomorrow', groups.tomorrow);
+  renderGroup('grid-d2', groups.d2);
+  renderGroup('grid-later', groups.later);
+}
+
+function cardStatusLabel(card) {
+  const st = getStatus(card);
+  if (st === 'overdue') return 'Overdue';
+  if (st === 'due') return 'Due today';
+  if (st === 'new') return 'New';
+  return 'Scheduled';
+}
+function renderCardLists() {
+  const body = document.getElementById('card-lists-body');
+  const count = document.getElementById('card-lists-count');
+  if (!body || !count) return;
+  const order = { overdue: 0, due: 1, new: 2, ok: 3 };
+  const keys = visibleKeys().sort((a, b) => {
+    const statusDiff = order[getStatus(store[a])] - order[getStatus(store[b])];
+    return statusDiff || displayName(a).localeCompare(displayName(b));
+  });
+  count.textContent = keys.length;
+  if (!keys.length) {
+    body.innerHTML = '<div class="empty-dash" style="padding:18px 14px;">No cards in this category</div>';
+    return;
+  }
+  body.innerHTML = keys.map(fname => {
+    const card = store[fname];
+    const status = getStatus(card);
+    const progress = `Reviews ${card.totalReviews || 0} · Streak ${card.repetitions || 0} · Interval ${card.interval || 0}d`;
+    return `<div class="card-list-row" onclick="openCard(${jsArg(fname)})">
+      <div>
+        <div class="cl-title" title="${escapeHtml(fname)}">${escapeHtml(displayName(fname))}</div>
+        <div class="cl-muted">${escapeHtml(fname)}</div>
+      </div>
+      <div class="cl-muted">${escapeHtml(card.category || DEFAULT_CATEGORY)}</div>
+      <div><span class="status-chip ${status}">${escapeHtml(cardStatusLabel(card))}</span></div>
+      <div class="cl-progress">${escapeHtml(progress)}</div>
+      <div class="cl-muted">${escapeHtml(fmtDate(card.lastReview))}</div>
+      <div class="cl-muted">${escapeHtml(fmtDate(card.nextReview))}</div>
+    </div>`;
+  }).join('');
+}
+
+function switchView(v) {
+  currentView = v;
+  document.getElementById('view-dashboard').style.display = v === 'dashboard' ? 'block' : 'none';
+  document.getElementById('view-card-lists').style.display = v === 'cardLists' ? 'block' : 'none';
+  document.getElementById('view-card').style.display = v === 'card' ? 'flex' : 'none';
+  document.getElementById('view-prompts').style.display = v === 'prompts' ? 'block' : 'none';
+  document.querySelectorAll('.vtab').forEach((tab, i) => tab.classList.toggle('active', ['dashboard','cardLists','prompts','card'][i] === v));
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'cardLists') renderCardLists();
+  if (v === 'prompts') renderPrompts();
+}
+
+async function openCard(fname) {
+  activeFile = fname;
+  const card = store[fname];
+  if (!card) return;
+  if (!card.content) {
+    try {
+      const res = await fetch(fname);
+      if (!res.ok) throw new Error();
+      card.content = await res.text();
+      saveStore();
+    } catch { showToast(`File not found: ${fname}`); return; }
+  }
+
+  switchView('card');
+  cardMode = 'preview';
+  editorDirty = false;
+  document.getElementById('tab-card').textContent = displayName(fname);
+  document.getElementById('md-render').innerHTML = marked.parse(card.content);
+  document.getElementById('md-editor').value = card.content;
+  document.getElementById('md-editor').classList.remove('dirty');
+  document.getElementById('empty-card').style.display = 'none';
+  document.getElementById('md-render').style.display = 'block';
+  document.getElementById('md-editor').style.display = 'none';
+  document.getElementById('topbar-title').textContent = displayName(fname);
+  document.getElementById('topbar-meta').innerHTML =
+    `Category: ${escapeHtml(card.category || DEFAULT_CATEGORY)}<br>Last review: ${fmtDatetime(card.lastReview)} · Next review: ${fmtDate(card.nextReview)}`;
+
+  const st = getStatus(card);
+  const pillMap = {
+    overdue: ['pill-overdue', `Overdue by ${Math.abs(daysDiff(card.nextReview))} day(s)`],
+    due: ['pill-due', 'Due today'],
+    new: ['pill-ok', 'New card'],
+    ok: ['pill-ok', `Review in ${daysDiff(card.nextReview)} day(s)`],
+  };
+  const todayReviewed = card.lastReview && dateStr(card.lastReview) === today();
+  const [pc, pt] = todayReviewed ? ['pill-done', 'Reviewed today'] : pillMap[st];
+  document.getElementById('status-pill').innerHTML = `<div class="status-pill ${pc}">${escapeHtml(pt)}</div>`;
+  document.getElementById('interval-display').textContent =
+    `Reviews ${card.totalReviews || 0} · Streak ${card.repetitions || 0} · Interval ${card.interval || 0}d · EF ${(card.ef || 2.5).toFixed(2)}`;
+  updateNextInfo();
+  renderCardEditorControls();
+  renderSidebar();
+  document.getElementById('main').scrollTo(0, 0);
+}
+function renderCardEditorControls() {
+  const hasCard = !!activeFile && !!store[activeFile];
+  const canSaveOriginal = hasCard && fileHandles.has(activeFile);
+  const canSaveNew = hasCard && !!directoryHandle;
+  document.getElementById('btn-preview').disabled = !hasCard || cardMode === 'preview';
+  document.getElementById('btn-edit').disabled = !hasCard || cardMode === 'edit';
+  document.getElementById('btn-save-md').disabled = !hasCard || cardMode !== 'edit' || !editorDirty;
+  document.getElementById('btn-cancel-edit').disabled = !hasCard || cardMode !== 'edit';
+  document.getElementById('btn-save-new').disabled = !canSaveNew || cardMode !== 'edit';
+  const saveBtn = document.getElementById('btn-save-md');
+  saveBtn.title = canSaveOriginal
+    ? 'Save changes to the original Markdown file.'
+    : 'This card is read-only until you reconnect the writable folder.';
+  renderCardFileStatus();
+}
+function renderCardFileStatus(kind = null) {
+  const el = document.getElementById('card-file-status');
+  if (!el) return;
+  el.className = '';
+  if (!activeFile || !store[activeFile]) { el.textContent = ''; return; }
+  if (kind === 'saved') {
+    el.textContent = 'Saved to Markdown file';
+    el.classList.add('saved');
+    return;
+  }
+  if (kind === 'readonly') {
+    el.textContent = 'Read-only card: click Connect Folder, then try Save again';
+    el.classList.add('readonly');
+    return;
+  }
+  if (editorDirty) {
+    el.textContent = fileHandles.has(activeFile) ? 'Unsaved changes' : 'Unsaved changes, read-only source';
+    el.classList.add('dirty');
+    return;
+  }
+  if (fileHandles.has(activeFile)) {
+    el.textContent = 'Writable file linked';
+    el.classList.add('writable');
+  } else {
+    el.textContent = 'Read-only card';
+    el.classList.add('readonly');
+  }
+}
+function setCardMode(mode) {
+  if (!activeFile || !store[activeFile]) return;
+  cardMode = mode;
+  document.getElementById('md-render').style.display = mode === 'preview' ? 'block' : 'none';
+  document.getElementById('md-editor').style.display = mode === 'edit' ? 'block' : 'none';
+  renderCardEditorControls();
+}
+function cancelMarkdownEdit() {
+  if (!activeFile || !store[activeFile]) return;
+  const editor = document.getElementById('md-editor');
+  editor.value = store[activeFile].content || '';
+  editorDirty = false;
+  editor.classList.remove('dirty');
+  setCardMode('preview');
+}
+async function saveActiveMarkdown() {
+  if (!activeFile || !store[activeFile]) return;
+  const handle = await resolveFileHandleForCard(activeFile);
+  if (!handle) {
+    renderCardFileStatus('readonly');
+    showToast('This card is read-only. Click Connect Folder, then try Save again.');
+    return;
+  }
+  const content = document.getElementById('md-editor').value;
+  try {
+    await writeFileHandle(handle, content);
+    store[activeFile].content = content;
+    saveStore();
+    document.getElementById('md-render').innerHTML = marked.parse(content);
+    editorDirty = false;
+    document.getElementById('md-editor').classList.remove('dirty');
+    setCardMode('preview');
+    renderCardFileStatus('saved');
+    showToast('Markdown file saved.');
+  } catch {
+    showToast('Could not save the Markdown file.');
+  }
+}
+async function saveEditAsNewFile() {
+  if (!activeFile || !store[activeFile]) return;
+  if (!directoryHandle) { showToast('Connect a writable folder first.'); return; }
+  const baseName = `${displayName(activeFile)} copy.md`;
+  const filename = prompt('New filename', baseName);
+  if (!filename) return;
+  const category = prompt('Category', store[activeFile].category || DEFAULT_CATEGORY) || DEFAULT_CATEGORY;
+  await createMarkdownFile(sanitizeFilename(filename), category, document.getElementById('md-editor').value, true);
+}
+function updateNextInfo() {
+  if (!activeFile) return;
+  const card = store[activeFile];
+  const previews = [1,2,3,4,5].map(q => `${q}->${previewInterval(card,q)}d`).join('  ');
+  document.getElementById('next-info').innerHTML = `Next interval preview<br><span style="color:var(--text3);font-size:11px;">${previews}</span>`;
+}
+function rateCard(q) {
+  if (!activeFile) return;
+  const card = store[activeFile];
+  const result = sm2(card, q);
+  Object.assign(card, result);
+  card.totalReviews = (card.totalReviews || 0) + 1;
+  saveStore();
+  showToast(`Rating ${q} saved. Next review in ${result.interval} day(s).`);
+  openCard(activeFile);
+  renderDashboard();
+}
+
+function upsertCard(name, content, category = inferCategoryFromName(name)) {
+  if (store[name]) {
+    store[name].content = content;
+    store[name].category = category || store[name].category || DEFAULT_CATEGORY;
+    return 'updated';
+  }
+  store[name] = { content, category, ef: 2.5, interval: 0, repetitions: 0, totalReviews: 0, lastReview: null, nextReview: null };
+  return 'added';
+}
+async function pickFolder() {
+  if ('showDirectoryPicker' in window) {
+    try {
+      directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      connectedRootName = directoryHandle.name;
+      await importWritableDirectory();
+      return;
+    } catch (err) {
+      if (err?.name !== 'AbortError') showToast('Could not connect writable folder.');
+      return;
+    }
+  }
+  const input = document.getElementById('folder-input');
+  if (!input.webkitdirectory && !('webkitdirectory' in input)) {
+    showToast('Folder import is not supported in this browser.');
+    return;
+  }
+  input.click();
+}
+async function importWritableDirectory() {
+  const files = await collectMarkdownHandles(directoryHandle);
+  writableRootCategory = connectedRootName || DEFAULT_CATEGORY;
+  if (!files.length) { showToast('Writable folder connected. No Markdown cards found.'); renderAll(); return; }
+  const hasNestedCategories = files.some(file => file.path.split('/').filter(Boolean).length > 1);
+  writableRootCategory = hasNestedCategories ? null : connectedRootName;
+  fileHandles = new Map();
+  let added = 0, updated = 0;
+  for (const item of files) {
+    const proposedName = normalizedNameFromHandlePath(item.path, hasNestedCategories);
+    const category = categoryFromHandlePath(item.path, hasNestedCategories);
+    const name = findExistingCardKey(proposedName, category) || proposedName;
+    const file = await item.handle.getFile();
+    const result = upsertCard(name, await file.text(), category);
+    fileHandles.set(name, item.handle);
+    if (result === 'added') added++; else updated++;
+  }
+  saveStore();
+  renderAll();
+  if (activeFile && store[activeFile]) openCard(activeFile);
+  showToast(`Writable import complete: ${added} added, ${updated} updated.`);
+}
+async function importFolderFiles(fileList) {
+  const mdFiles = Array.from(fileList)
+    .filter(file => file.name.toLowerCase().endsWith('.md'))
+    .sort((a, b) => normalizeImportedName(a).localeCompare(normalizeImportedName(b)));
+  if (!mdFiles.length) { showToast('No Markdown cards found.'); return; }
+  const hasNestedCategories = mdFiles.some(file => {
+    const parts = (file.webkitRelativePath || file.name).split('/').filter(Boolean);
+    return parts.length > 2;
+  });
+  let added = 0, updated = 0;
+  for (const file of mdFiles) {
+    const name = normalizeImportedName(file);
+    const category = categoryOfFile(file, hasNestedCategories);
+    const result = upsertCard(name, await file.text(), category);
+    if (result === 'added') added++; else updated++;
+  }
+  saveStore();
+  renderAll();
+  if (activeFile && store[activeFile]) openCard(activeFile);
+  showToast(`Imported ${mdFiles.length} cards: ${added} added, ${updated} updated.`);
+}
+async function addFile() {
+  let fname = document.getElementById('file-input').value.trim();
+  if (!fname) return;
+  if (!fname.endsWith('.md')) fname += '.md';
+  try {
+    const res = await fetch(fname);
+    if (!res.ok) throw new Error();
+    const result = upsertCard(fname, await res.text(), inferCategoryFromName(fname));
+    saveStore();
+    document.getElementById('file-input').value = '';
+    renderAll();
+    openCard(fname);
+    showToast(result === 'added' ? `Loaded ${fname}` : `Updated ${fname}`);
+  } catch { showToast(`File not found: ${fname}`); }
+}
+function deleteCard() {
+  if (!activeFile || !confirm(`Remove "${activeFile}"?`)) return;
+  delete store[activeFile];
+  saveStore();
+  activeFile = null;
+  document.getElementById('tab-card').textContent = 'Card';
+  document.getElementById('topbar-title').textContent = 'No card selected';
+  document.getElementById('md-render').style.display = 'none';
+  document.getElementById('empty-card').style.display = 'flex';
+  renderAll();
+  switchView('dashboard');
+}
+
+function openNewCardModal() {
+  if (!directoryHandle) {
+    showToast('Connect a writable folder before creating Markdown files.');
+    return;
+  }
+  const category = activeCategory === 'All' ? DEFAULT_CATEGORY : activeCategory;
+  const select = document.getElementById('new-card-category');
+  select.innerHTML = allCategories().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  select.value = category;
+  document.getElementById('new-card-name').value = '';
+  document.getElementById('new-card-content').value = '# New card\n';
+  document.getElementById('new-card-status').textContent = '';
+  document.getElementById('new-card-modal').style.display = 'flex';
+  document.getElementById('new-card-name').focus();
+}
+function closeNewCardModal() {
+  document.getElementById('new-card-modal').style.display = 'none';
+}
+async function createMarkdownCard() {
+  const filename = sanitizeFilename(document.getElementById('new-card-name').value);
+  const category = document.getElementById('new-card-category').value || DEFAULT_CATEGORY;
+  const content = document.getElementById('new-card-content').value;
+  if (!filename) {
+    document.getElementById('new-card-status').textContent = 'Filename is required.';
+    return;
+  }
+  await createMarkdownFile(filename, category, content, false);
+  closeNewCardModal();
+}
+async function createMarkdownFile(filename, category, content, allowRenamePrompt) {
+  if (!directoryHandle) { showToast('Connect a writable folder first.'); return; }
+  const path = cardPathFor(category, filename);
+  if (!path) { showToast('Filename is required.'); return; }
+  if (store[path] && !confirm(`"${path}" already exists. Replace it?`)) return;
+  try {
+    const handle = await getWritableFileHandle(path, true);
+    await writeFileHandle(handle, content);
+    const result = upsertCard(path, content, category);
+    fileHandles.set(path, handle);
+    saveStore();
+    activeCategory = category || DEFAULT_CATEGORY;
+    renderAll();
+    openCard(path);
+    showToast(result === 'added' ? `Created ${path}` : `Updated ${path}`);
+  } catch {
+    if (allowRenamePrompt) showToast('Could not create the new Markdown file.');
+    else document.getElementById('new-card-status').textContent = 'Could not create the file.';
+  }
+}
+
+function renderPrompts() {
+  renderPromptCategoryOptions();
+  const body = document.getElementById('prompt-list-body');
+  const visible = prompts.filter(p => activeCategory === 'All' || p.category === activeCategory);
+  if (!visible.length) {
+    body.innerHTML = '<div style="padding:12px;color:var(--text3);font-size:13px;">No prompts in this category</div>';
+  } else {
+    body.innerHTML = visible.map(prompt => `
+      <div class="prompt-entry${prompt.id === activePromptId ? ' active' : ''}" onclick="selectPrompt(${jsArg(prompt.id)})">
+        <div class="prompt-title">${escapeHtml(prompt.title)}</div>
+        <div class="prompt-meta">${escapeHtml(prompt.category)} · Updated ${escapeHtml(fmtDate(prompt.updatedAt))}</div>
+      </div>
+    `).join('');
+  }
+  if (!activePromptId || !prompts.some(p => p.id === activePromptId)) activePromptId = visible[0]?.id || null;
+  loadPromptIntoEditor();
+}
+function renderPromptCategoryOptions() {
+  const select = document.getElementById('prompt-category');
+  const categories = allCategories();
+  select.innerHTML = categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+}
+function loadPromptIntoEditor() {
+  const prompt = prompts.find(p => p.id === activePromptId);
+  document.getElementById('prompt-title').value = prompt?.title || '';
+  document.getElementById('prompt-body').value = prompt?.body || '';
+  document.getElementById('prompt-category').value = prompt?.category || (activeCategory === 'All' ? DEFAULT_CATEGORY : activeCategory);
+  document.getElementById('btn-delete-prompt').disabled = !prompt;
+  document.getElementById('prompt-save-state').textContent = prompt ? `Updated ${fmtDatetime(prompt.updatedAt)}` : '';
+}
+function selectPrompt(id) {
+  activePromptId = id;
+  renderPrompts();
+}
+function newPrompt() {
+  const now = new Date().toISOString();
+  const category = activeCategory === 'All' ? DEFAULT_CATEGORY : activeCategory;
+  const prompt = { id: crypto.randomUUID(), title: 'Untitled Prompt', body: '', category, createdAt: now, updatedAt: now };
+  prompts.unshift(prompt);
+  activePromptId = prompt.id;
+  savePrompts();
+  renderAll();
+  renderPrompts();
+}
+function savePromptFromEditor() {
+  const now = new Date().toISOString();
+  const title = document.getElementById('prompt-title').value.trim() || 'Untitled Prompt';
+  const body = document.getElementById('prompt-body').value;
+  const category = document.getElementById('prompt-category').value || DEFAULT_CATEGORY;
+  let prompt = prompts.find(p => p.id === activePromptId);
+  if (!prompt) {
+    prompt = { id: crypto.randomUUID(), createdAt: now };
+    prompts.unshift(prompt);
+    activePromptId = prompt.id;
+  }
+  Object.assign(prompt, { title, body, category, updatedAt: now });
+  savePrompts();
+  renderAll();
+  renderPrompts();
+  showToast('Prompt saved.');
+}
+function deletePrompt() {
+  if (!activePromptId) return;
+  const prompt = prompts.find(p => p.id === activePromptId);
+  if (!prompt || !confirm(`Delete "${prompt.title}"?`)) return;
+  prompts = prompts.filter(p => p.id !== activePromptId);
+  activePromptId = prompts[0]?.id || null;
+  savePrompts();
+  renderAll();
+  renderPrompts();
+  showToast('Prompt deleted.');
+}
+
+let _tt;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 2200);
+}
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if (currentView === 'card' && activeFile && ['1','2','3','4','5'].includes(e.key)) rateCard(+e.key);
+});
+document.getElementById('file-input').addEventListener('keydown', e => { if (e.key === 'Enter') addFile(); });
+document.getElementById('folder-input').addEventListener('change', async e => {
+  directoryHandle = null;
+  connectedRootName = '';
+  writableRootCategory = null;
+  fileHandles = new Map();
+  await importFolderFiles(e.target.files);
+  e.target.value = '';
+});
+document.getElementById('md-editor').addEventListener('input', e => {
+  editorDirty = activeFile ? e.target.value !== (store[activeFile]?.content || '') : false;
+  e.target.classList.toggle('dirty', editorDirty);
+  renderCardEditorControls();
+});
+document.getElementById('new-card-modal').addEventListener('click', e => {
+  if (e.target.id === 'new-card-modal') closeNewCardModal();
+});
+
+async function autoLoadFromManifest() {
+  try {
+    const res = await fetch('cards.json?_=' + Date.now());
+    if (!res.ok) throw new Error();
+    const files = await res.json();
+    let added = 0;
+    for (const fname of files) {
+      const name = fname.endsWith('.md') ? fname : fname + '.md';
+      try {
+        const r = await fetch(name + '?_=' + Date.now());
+        if (!r.ok) continue;
+        const result = upsertCard(name, await r.text(), inferCategoryFromName(name));
+        if (result === 'added') added++;
+      } catch {}
+    }
+    if (added > 0) showToast(`Auto-loaded ${added} new card(s).`);
+  } catch {}
+  saveStore();
+  renderAll();
+}
+function renderAll() {
+  renderSidebar();
+  renderDashboard();
+  renderCardEditorControls();
+  if (currentView === 'cardLists') renderCardLists();
+  if (currentView === 'prompts') renderPrompts();
+}
+
+renderAll();
+autoLoadFromManifest();
+</script>
+</body>
+</html>
